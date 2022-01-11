@@ -19,11 +19,14 @@ export class MembersService {
   user: User;
   userParams: UserParams;
 
-  constructor(private http: HttpClient, private accountService: AccountService) {
-    accountService.currentUser$.pipe(take(1)).subscribe(user => {
+  constructor(
+    private http: HttpClient,
+    private accountService: AccountService
+  ) {
+    accountService.currentUser$.pipe(take(1)).subscribe((user) => {
       this.user = user;
       this.userParams = new UserParams(user);
-    })
+    });
   }
 
   resetUserParams() {
@@ -32,7 +35,17 @@ export class MembersService {
   }
 
   getUserParams() {
-    return this.userParams
+    return this.userParams;
+  }
+
+  addLike(username: string) {
+    return this.http.post(this.baseUrl + 'likes/' + username, {});
+  }
+
+  getLikes(predicate: string, pageNumber, pageSize) {
+    let params = this.getPaginationHeaders(pageNumber, pageSize);
+    params = params.append('predicate', predicate);
+    return this.getPaginatedResult<Partial<Member[]>>(this.baseUrl+'likes', params);
   }
 
   setUserParams(params: UserParams) {
@@ -54,18 +67,22 @@ export class MembersService {
     params = params.append('gender', userParams.gender);
     params = params.append('orderBy', userParams.orderBy);
 
-    return this.getPaginatedResult<Member[]>(this.baseUrl + 'users', params)
-    .pipe(map(response => {
-      this.memberCache.set(Object.values(userParams).join('-'),response);
-      return response;
-    }))
+    return this.getPaginatedResult<Member[]>(
+      this.baseUrl + 'users',
+      params
+    ).pipe(
+      map((response) => {
+        this.memberCache.set(Object.values(userParams).join('-'), response);
+        return response;
+      })
+    );
   }
 
   getMember(username: string) {
     const member = [...this.memberCache.values()]
-    .reduce((arr, elem) => arr.concat(elem.result), [])
-    .find((member:Member) => member.username === username);
-    if(member) {
+      .reduce((arr, elem) => arr.concat(elem.result), [])
+      .find((member: Member) => member.username === username);
+    if (member) {
       return of(member);
     }
 
